@@ -34,12 +34,30 @@ Computer-assisted surgery needs to know *what* is in the endoscope image (liver,
 ## Results
 
 ### Segmentation (CholecSeg8k, held-out videos)
-<!-- Fill in after training: copy results/metrics.md here -->
-Run the [Colab notebook](notebooks/train_colab.ipynb) → `results/metrics.md` contains per-class IoU / Dice.
+Held-out videos: `video12`, `video20`, `video48`, `video55` (1280 frames), 30 epochs, ResNet34 encoder.
 
-| Model | Input | mIoU | mDice | C++ CPU latency |
-|---|---|---|---|---|
-| ResNet34-U-Net | 256×448 | _tbd_ | _tbd_ | _tbd_ |
+| Model | Input | mIoU | mDice | Pixel acc. | C++ CPU latency |
+|---|---|---|---|---|---|
+| ResNet34-U-Net | 256×448 | 0.552 | 0.646 | 0.872 | _tbd_ |
+
+| Class | IoU | Dice |
+|---|---|---|
+| Background | 0.976 | 0.988 |
+| Abdominal Wall | 0.704 | 0.826 |
+| Liver | 0.762 | 0.865 |
+| Gastrointestinal Tract | 0.555 | 0.714 |
+| Fat | 0.812 | 0.896 |
+| Grasper | 0.729 | 0.843 |
+| Connective Tissue | 0.276 | 0.433 |
+| Blood | 0.000 | 0.000 |
+| Cystic Duct | 0.000 | 0.000 |
+| L-hook Electrocautery | 0.715 | 0.834 |
+| Gallbladder | 0.547 | 0.707 |
+| Hepatic Vein | 0.000 | 0.000 |
+| Liver Ligament | – | – (absent from held-out videos) |
+| **Mean** | **0.552** | **0.646** |
+
+**Reading the per-class numbers.** The large, high-contrast structures (background, fat, liver, grasper, cautery hook, abdominal wall) are all learned solidly (IoU 0.70–0.98) after just 30 epochs on a single split. Three classes — blood, cystic duct, hepatic vein — score exactly 0. These are small, low-contrast, and rare in pixel count, and with a first-pass, unweighted Dice+CE loss the model can hit a low overall loss by simply never predicting them; the aggregate mIoU hides this. This mirrors the failure mode from the leakage-detection project above: a model can look good on the mean while being completely blind to a specific, high-stakes subset — here, structures that matter most for surgical safety (e.g. warning before a bleed near the cystic duct). Next step to fix it: class-weighted loss or oversampling of frames containing these structures, plus more epochs.
 
 ### Stereo (synthetic ground truth, `tools/make_synthetic_stereo.py`)
 Virtual stereo endoscope: f = 400 px, baseline = 5 mm, 15 chessboard pairs; test scene with two planes at 80 mm and 50 mm.
